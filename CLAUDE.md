@@ -15,7 +15,7 @@ Reads a `.jsonl` session file and prints the conversation to stdout using ANSI e
 **Key design decisions:**
 - No external dependencies — plain Python stdlib only
 - Resolves session UUIDs automatically by searching `~/.claude/projects/` recursively
-- Builds the conversation thread by walking the `parentUuid` linked list, always taking the most recent branch at each fork, skipping `isSidechain: true` entries (those are subagent calls)
+- Builds the conversation thread by walking the `parentUuid` linked list, always taking the most recent branch at each fork, skipping `isSidechain: true` entries (those are subagent calls). Importantly, the children map includes ALL entry types (including `system` entries like `turn_duration`) because they appear as intermediate links in the chain — filtering by type when building the map would break the thread.
 - Renders markdown inline using regex (bold, italic, inline code, headers, bullets, code blocks) — not a full parser, handles the common cases Claude produces
 - Skips `thinking` blocks entirely (they're internal and not part of the visible conversation)
 

@@ -175,14 +175,17 @@ def build_thread(entries):
     This walks from the root (parentUuid=None) following the most recent
     branch at each step, skipping sidechains (subagent calls).
     """
+    # Build children map only for entries with real UUIDs.
+    # Metadata entries (file-history-snapshot, custom-title, etc.) have uuid=None
+    # and must be excluded — they all have parentUuid=None too, which would
+    # flood the root and hide the real first message.
+    # We DO include system entries (e.g. turn_duration) because they have real
+    # UUIDs and appear as intermediate links in the chain between real messages.
     children = {}
     for e in entries:
-        if e.get('isSidechain'):
+        if e.get('isSidechain') or not e.get('uuid'):
             continue
         parent = e.get('parentUuid')
-        t = e.get('type')
-        if t not in ('user', 'assistant'):
-            continue
         if parent not in children:
             children[parent] = []
         children[parent].append(e)
@@ -191,17 +194,26 @@ def build_thread(entries):
     current_uuid = None
     visited = set()
 
+    RENDERABLE = ('user', 'assistant')
+    TRAVERSABLE = ('user', 'assistant', 'system')
+
     while True:
         kids = children.get(current_uuid, [])
         if not kids:
             break
-        kids.sort(key=lambda e: e.get('timestamp', ''))
-        next_entry = kids[-1]
+
+        # Prefer user/assistant children over progress/metadata.
+        # progress entries branch off with later timestamps and would
+        # hijack the chain if we just took kids[-1].
+        real_kids = [k for k in kids if k.get('type') in TRAVERSABLE]
+        next_entry = sorted(real_kids or kids, key=lambda e: e.get('timestamp', ''))[-1]
+
         uuid = next_entry.get('uuid')
         if uuid in visited:
             break
         visited.add(uuid)
-        thread.append(next_entry)
+        if next_entry.get('type') in RENDERABLE:
+            thread.append(next_entry)
         current_uuid = uuid
 
     return thread
