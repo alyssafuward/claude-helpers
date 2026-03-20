@@ -25,7 +25,7 @@ python3 render_chat.py --list
 python3 render_chat.py a1b2c3d4-e5f6-7890-abcd-ef1234567890
 
 # Render from a file path directly
-python3 render_chat.py ~/.claude/projects/-Users-you/e0bb3bd9-....jsonl
+python3 render_chat.py ~/.claude/projects/-Users-you/a1b2c3d4-....jsonl
 ```
 
 Sessions are stored in `~/.claude/projects/` as `.jsonl` files. The UUID is the filename without the extension.
