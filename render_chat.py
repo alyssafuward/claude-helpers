@@ -23,8 +23,8 @@ YELLOW  = "\033[38;5;221m"
 RED     = "\033[38;5;203m"
 
 # Backgrounds
-BG_USER = "\033[48;5;237m"   # dark grey for user messages
-BG_TOOL = "\033[48;5;235m"   # slightly lighter for tool results
+BG_USER = "\033[48;5;252m"   # light grey for user messages
+BG_TOOL = "\033[48;5;235m"   # dark grey for tool results
 
 TERM_WIDTH = shutil.get_terminal_size((100, 40)).columns
 
@@ -115,7 +115,7 @@ def render_user(text):
             chunks = [line]
         for chunk in chunks:
             padding = ' ' * (inner_width - len(re.sub(r'\033\[[0-9;]*m', '', chunk)))
-            print(f"{BG_USER}{GREY}  {RESET}{BG_USER}{WHITE} {chunk}{padding} {RESET}")
+            print(f"{BG_USER}\033[38;5;238m > {RESET}{BG_USER}\033[38;5;232m{chunk}{padding} {RESET}")
     print()
 
 
