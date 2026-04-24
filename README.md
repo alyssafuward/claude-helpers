@@ -43,6 +43,25 @@ Sessions are stored in `~/.claude/projects/` as `.jsonl` files. The UUID is the 
 
 ---
 
+## Skills
+
+Reusable [Claude Code skills](https://docs.anthropic.com/en/docs/claude-code/skills) — invoke them with `/skill-name` in any Claude Code session.
+
+### `rename-sug`
+
+Looks at the current conversation and suggests a short, specific chat title (under 60 characters). Copies `/rename <title>` to your clipboard so you can paste and confirm in one keystroke.
+
+**Install:**
+```bash
+mkdir -p ~/.claude/skills/rename-sug
+curl -o ~/.claude/skills/rename-sug/skill.md \
+  https://raw.githubusercontent.com/alyssafuward/claude-helpers/main/skills/rename-sug/skill.md
+```
+
+**Usage:** type `/rename-sug` in any Claude Code session.
+
+---
+
 ## Contributing
 
 This repo is a scratchpad for Claude Code quality-of-life tools. PRs and issues welcome.
