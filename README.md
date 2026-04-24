@@ -12,7 +12,7 @@ Skills are just markdown files that live in `~/.claude/skills/<skill-name>/skill
 
 Looks at the current conversation and suggests a short, specific chat title (under 60 characters). Copies `/rename <title>` to your clipboard so you can paste and confirm in one keystroke.
 
-**Install:** [Download `skill.md`](https://github.com/alyssafuward/claude-helpers/blob/main/skills/rename-sug/skill.md) from this repo, then drag it into a Claude Code conversation and say "install this skill."
+**Install:** [Download `skill.md`](https://github.com/alyssafuward/claude-helpers/blob/main/skills/rename-sug/skill.md) from this repo, then drag it into a Claude Code conversation and say, "Install this skill."
 
 **Usage:** type `/rename-sug` in any Claude Code session.
 
