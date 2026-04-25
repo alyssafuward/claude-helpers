@@ -1,23 +1,47 @@
+#!/usr/bin/env node
+/**
+ * Generic version switcher — run from a git repo root that has a versions.json.
+ *
+ * versions.json format:
+ * {
+ *   "port": 3003,
+ *   "serve": "path/to/app.html",       // file to inject version bar into
+ *   "assets": ["path/to/data.js"],     // other files to serve (by filename at /<basename>)
+ *   "versions": [
+ *     { "label": "v1 — Description", "hash": "abc1234" },
+ *     ...
+ *   ]
+ * }
+ */
+
 const http = require('http');
 const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-const repoRoot = path.resolve(__dirname, '..');
-const appFile = path.join(__dirname, 'index.html');
-const dataFile = path.join(__dirname, 'data.js');
+const repoRoot = process.cwd();
+const configPath = path.join(repoRoot, 'versions.json');
 
-const versions = [
-  { label: 'v1 — Basic transcript viewer',            hash: 'd514a64' },
-  { label: 'v2 — localStorage, cmd+click, save/load', hash: 'd491a68' },
-  { label: 'v3 — Tabs, sections, boundary drag',      hash: '6302ffb' },
-];
+if (!fs.existsSync(configPath)) {
+  console.error('No versions.json found in', repoRoot);
+  console.error('Create one with: { "port": 3003, "serve": "path/to/app.html", "assets": [], "versions": [...] }');
+  process.exit(1);
+}
 
-let active = '6302ffb';
+const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+const { port = 3003, serve, assets = [], versions } = config;
+
+if (!serve || !versions?.length) {
+  console.error('versions.json must include "serve" (path to HTML file) and "versions" (array of {label, hash})');
+  process.exit(1);
+}
+
+const appFile = path.join(repoRoot, serve);
+let active = versions[versions.length - 1].hash;
 
 function switchTo(hash) {
   if (!/^[0-9a-f]{7,40}$|^HEAD$/.test(hash)) return false;
-  execSync(`git checkout ${hash} -- transcript-cutter/index.html`, { cwd: repoRoot });
+  execSync(`git checkout ${hash} -- ${serve}`, { cwd: repoRoot });
   active = hash;
   return true;
 }
@@ -54,7 +78,8 @@ const versionBarCSS = `
 #version-bar button.active { background: #2563eb; color: white; border-color: #2563eb; }
 </style>`;
 
-const versionBarHTML = (active) => `
+function versionBarHTML(active) {
+  return `
 <div id="version-bar">
   <span>versions:</span>
   ${versions.map(v => `
@@ -63,10 +88,10 @@ const versionBarHTML = (active) => `
     <button type="submit" ${active === v.hash ? 'class="active"' : ''}>${v.label}</button>
   </form>`).join('')}
 </div>`;
+}
 
 function serveApp(res) {
   let html = fs.readFileSync(appFile, 'utf8');
-  // Inject version bar styles into <head> and bar before </body>
   html = html.replace('</head>', versionBarCSS + '\n</head>');
   html = html.replace('</body>', versionBarHTML(active) + '\n</body>');
   res.writeHead(200, { 'Content-Type': 'text/html' });
@@ -86,21 +111,25 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Serve data.js so the app can load transcript data
-  if (req.url === '/data.js') {
-    if (fs.existsSync(dataFile)) {
-      res.writeHead(200, { 'Content-Type': 'application/javascript' });
-      res.end(fs.readFileSync(dataFile));
-    } else {
-      res.writeHead(404);
-      res.end('// data.js not found');
+  // Serve declared assets by their basename (e.g. transcript-cutter/data.js → /data.js)
+  for (const assetPath of assets) {
+    if (req.url === '/' + path.basename(assetPath)) {
+      const full = path.join(repoRoot, assetPath);
+      if (fs.existsSync(full)) {
+        res.writeHead(200, { 'Content-Type': 'application/javascript' });
+        res.end(fs.readFileSync(full));
+      } else {
+        res.writeHead(404);
+        res.end('// not found: ' + assetPath);
+      }
+      return;
     }
-    return;
   }
 
   serveApp(res);
 });
 
-server.listen(3003, () => {
-  console.log('Transcript Cutter (with versions) → http://localhost:3003');
+server.listen(port, () => {
+  console.log(`Version switcher → http://localhost:${port}`);
+  console.log(`Serving          → ${appFile}`);
 });
