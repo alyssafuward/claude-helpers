@@ -1,2 +1,4 @@
+transcript-cutter/data.js
+transcript-cutter/*.vtt
 __pycache__/
 *.pyc
