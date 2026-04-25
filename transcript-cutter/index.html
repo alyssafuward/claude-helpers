@@ -270,6 +270,10 @@
       <div class="stats" id="stats"></div>
       <button class="export-btn export-text-btn" onclick="exportText()">Copy as timestamps</button>
       <button class="export-btn export-ffmpeg-btn" onclick="exportFFmpeg()">Copy ffmpeg command</button>
+      <button class="export-btn" style="background:#f0f0f0;color:#1a1a1a" onclick="saveToFile()">Download selections</button>
+      <label class="export-btn" style="background:#f0f0f0;color:#1a1a1a;text-align:center;cursor:pointer">
+        Load selections<input type="file" accept=".json" style="display:none" onchange="loadFromFile(this)">
+      </label>
     </div>
   </div>
 </main>
@@ -280,27 +284,50 @@
 <script>
 let cues = [];
 let selected = new Set();
+let lastClicked = null;
+let currentFilename = '';
+
+// ── Persist selections ─────────────────────────────────────────────────────
+function saveSelections() {
+  if (!currentFilename) return;
+  localStorage.setItem('tc-sel:' + currentFilename, JSON.stringify([...selected]));
+}
+
+function loadSavedSelections(filename) {
+  const saved = localStorage.getItem('tc-sel:' + filename);
+  if (saved) {
+    selected = new Set(JSON.parse(saved));
+    return true;
+  }
+  return false;
+}
 
 // ── Auto-load from data.js ─────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   if (window.TRANSCRIPT_DATA) {
     const d = window.TRANSCRIPT_DATA;
     cues = d.cues;
-    selected = new Set();
-    if (d.suggested) {
+    currentFilename = d.filename || '';
+    document.getElementById('filename-label').textContent = currentFilename;
+
+    const hasSaved = loadSavedSelections(currentFilename);
+    if (!hasSaved && d.suggested) {
+      selected = new Set();
       const suggestedIds = new Set(d.suggested);
       cues.forEach((c, i) => { if (suggestedIds.has(c.id)) selected.add(i); });
     }
-    document.getElementById('filename-label').textContent = d.filename || '';
+
     if (d.suggested) {
       const badge = document.getElementById('ai-badge');
-      badge.textContent = `AI suggested ${selected.size} of ${cues.length} segments`;
+      badge.textContent = hasSaved
+        ? `Restored ${selected.size} saved selections`
+        : `AI suggested ${selected.size} of ${cues.length} segments`;
       badge.style.display = 'inline-block';
     }
+
     document.getElementById('header-actions').style.display = 'flex';
     renderTranscript();
     renderRanges();
-    // scroll to first selected
     const first = document.querySelector('.cue.selected');
     if (first) setTimeout(() => first.scrollIntoView({ block: 'center' }), 100);
   }
@@ -320,15 +347,18 @@ dropZone.addEventListener('drop', e => {
 function loadFile(input) { if (input.files[0]) readFile(input.files[0]); }
 
 function readFile(file) {
-  document.getElementById('filename-label').textContent = file.name;
+  currentFilename = file.name;
+  document.getElementById('filename-label').textContent = currentFilename;
   document.getElementById('ai-badge').style.display = 'none';
   const reader = new FileReader();
   reader.onload = e => {
     cues = parseVTT(e.target.result);
-    selected = new Set();
+    const hasSaved = loadSavedSelections(currentFilename);
+    if (!hasSaved) selected = new Set();
     renderTranscript();
     renderRanges();
     document.getElementById('header-actions').style.display = 'flex';
+    if (hasSaved) toast(`Restored ${selected.size} saved selections`);
   };
   reader.readAsText(file);
 }
@@ -404,20 +434,33 @@ function renderTranscript() {
         <div class="cue-text">${escHtml(cue.text)}</div>
       </div>
     `;
-    div.addEventListener('click', () => toggleCue(idx));
+    div.addEventListener('click', (e) => handleCueClick(idx, e));
     panel.appendChild(div);
   });
 }
 
-function toggleCue(idx) {
-  if (selected.has(idx)) { selected.delete(idx); } else { selected.add(idx); }
-  const el = document.querySelector(`.cue[data-idx="${idx}"]`);
-  if (el) el.className = 'cue' + (selected.has(idx) ? ' selected' : '');
+function handleCueClick(idx, e) {
+  if (e.metaKey && lastClicked !== null) {
+    // cmd+click: select range between lastClicked and idx
+    const lo = Math.min(lastClicked, idx);
+    const hi = Math.max(lastClicked, idx);
+    const allSelected = [...Array(hi - lo + 1).keys()].map(k => k + lo).every(i => selected.has(i));
+    for (let i = lo; i <= hi; i++) {
+      allSelected ? selected.delete(i) : selected.add(i);
+    }
+    renderTranscript();
+  } else {
+    if (selected.has(idx)) { selected.delete(idx); } else { selected.add(idx); }
+    const el = document.querySelector(`.cue[data-idx="${idx}"]`);
+    if (el) el.className = 'cue' + (selected.has(idx) ? ' selected' : '');
+  }
+  lastClicked = idx;
+  saveSelections();
   renderRanges();
 }
 
-function selectAll() { cues.forEach((_, i) => selected.add(i)); renderTranscript(); renderRanges(); }
-function deselectAll() { selected.clear(); renderTranscript(); renderRanges(); }
+function selectAll() { cues.forEach((_, i) => selected.add(i)); renderTranscript(); saveSelections(); renderRanges(); }
+function deselectAll() { selected.clear(); renderTranscript(); saveSelections(); renderRanges(); }
 
 // ── Merge and render ranges ────────────────────────────────────────────────
 function getMergedRanges() {
@@ -488,6 +531,47 @@ function exportFFmpeg() {
   }
   copyToClipboard(lines.join('\n'));
   toast('Copied ffmpeg command to clipboard');
+}
+
+function saveToFile() {
+  const data = {
+    filename: currentFilename,
+    cues: cues.map((c, i) => ({ ...c, keep: selected.has(i) }))
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (currentFilename || 'transcript').replace('.vtt', '') + '.marked.json';
+  a.click();
+}
+
+function loadFromFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      // support both full marked format and legacy id-only format
+      if (data.cues) {
+        const keepIds = new Set(data.cues.filter(c => c.keep).map(c => c.id));
+        selected = new Set();
+        cues.forEach((c, i) => { if (keepIds.has(c.id)) selected.add(i); });
+      } else {
+        const ids = new Set(data.selected);
+        selected = new Set();
+        cues.forEach((c, i) => { if (ids.has(c.id)) selected.add(i); });
+      }
+      renderTranscript();
+      renderRanges();
+      saveSelections();
+      toast(`Loaded ${selected.size} selections`);
+    } catch {
+      toast('Invalid selections file');
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
 }
 
 function copyToClipboard(text) {
