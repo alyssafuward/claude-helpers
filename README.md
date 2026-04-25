@@ -1,6 +1,6 @@
-# claude-helpers
+# ai-builder-toolkit
 
-A collection of utilities for working with Claude Code outside the normal interactive session — browsing history, replaying conversations, and anything else that's useful but not built in.
+A collection of tools built with AI, for building with AI. Utilities for navigating your Claude Code sessions, editing transcripts, browsing project history, and anything else that makes AI-assisted development smoother.
 
 ## Skills
 
@@ -12,9 +12,31 @@ Skills are just markdown files that live in `~/.claude/skills/<skill-name>/skill
 
 Looks at the current conversation and suggests a short, specific chat title (under 60 characters). Copies `/rename <title>` to your clipboard so you can paste and confirm in one keystroke.
 
-**Install:** [Download `skill.md`](https://github.com/alyssafuward/claude-helpers/blob/main/skills/rename-sug/skill.md) from this repo, then drag it into a Claude Code conversation and say, "Install this skill."
+**Install:** [Download `skill.md`](https://github.com/alyssafuward/ai-builder-toolkit/blob/main/skills/rename-sug/skill.md) from this repo, then drag it into a Claude Code conversation and say, "Install this skill."
 
 **Usage:** type `/rename-sug` in any Claude Code session.
+
+---
+
+## Transcript Cutter
+
+A browser app for editing video transcripts. Load a `.vtt` file, select the segments you want to keep across multiple named selection sets (e.g. Video, GitHub), adjust section boundaries, and export timestamps or transcript text.
+
+See [`transcript-cutter/`](transcript-cutter/) for details.
+
+---
+
+## Version Switcher
+
+A local dev tool for browsing meaningful versions of a project. Runs a small Node server that injects a version bar into your app — click a version, the app reloads at that commit. Great for tutorials and walkthroughs.
+
+Add a `versions.json` to any git repo listing the commits you want to show, then run:
+
+```bash
+node path/to/version-switcher.js
+```
+
+See [`transcript-cutter/version-switcher.js`](transcript-cutter/version-switcher.js) for the current implementation (will be extracted into a standalone utility).
 
 ---
 
@@ -24,12 +46,7 @@ Looks at the current conversation and suggests a short, specific chat title (und
 
 > **Note:** This script is out of date and may not work correctly with recent versions of Claude Code.
 
-Renders a saved Claude Code conversation in your terminal, styled to match the Claude Code TUI (grey boxes for user messages, `●` prefix for Claude responses, dim tool call lines).
-
-Useful for:
-- Scrolling through and screenshotting old conversations
-- Reviewing what happened in a long session
-- Sharing a conversation as a terminal recording
+Renders a saved Claude Code conversation in your terminal, styled to match the Claude Code TUI.
 
 **Requirements:** Python 3.6+, no dependencies.
 
@@ -41,15 +58,10 @@ python3 utilities/render_chat.py --list
 
 # Render a session by UUID
 python3 utilities/render_chat.py a1b2c3d4-e5f6-7890-abcd-ef1234567890
-
-# Render from a file path directly
-python3 utilities/render_chat.py ~/.claude/projects/-Users-you/a1b2c3d4-....jsonl
 ```
-
-Sessions are stored in `~/.claude/projects/` as `.jsonl` files. The UUID is the filename without the extension.
 
 ---
 
 ## Contributing
 
-This repo is a scratchpad for Claude Code quality-of-life tools. PRs and issues welcome.
+PRs and issues welcome.
