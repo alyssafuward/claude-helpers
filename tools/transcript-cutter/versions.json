@@ -1,7 +1,7 @@
 {
   "port": 3003,
-  "serve": "tools/transcript-cutter/index.html",
-  "assets": ["tools/transcript-cutter/data.js"],
+  "serve": "index.html",
+  "assets": ["data.js"],
   "versions": [
     { "label": "v1 — Basic transcript viewer",            "hash": "d514a64" },
     { "label": "v2 — localStorage, cmd+click, save/load", "hash": "d491a68" },

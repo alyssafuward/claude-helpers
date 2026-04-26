@@ -20,28 +20,35 @@ const path = require('path');
 const fs = require('fs');
 
 const repoRoot = process.cwd();
-const configPath = path.join(repoRoot, 'versions.json');
+const configArg = process.argv[2];
+const configPath = configArg
+  ? path.resolve(repoRoot, configArg)
+  : path.join(repoRoot, 'versions.json');
 
 if (!fs.existsSync(configPath)) {
-  console.error('No versions.json found in', repoRoot);
-  console.error('Create one with: { "port": 3003, "serve": "path/to/app.html", "assets": [], "versions": [...] }');
+  console.error('No versions.json found. Pass a path: node version-switcher.js tools/transcript-cutter/versions.json');
   process.exit(1);
 }
 
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+const configDir = path.dirname(configPath);
 const { port = 3003, serve, assets = [], versions } = config;
+
+// Resolve paths relative to the versions.json location
+const resolvedServe = path.relative(repoRoot, path.resolve(configDir, serve));
+const resolvedAssets = assets.map(a => path.relative(repoRoot, path.resolve(configDir, a)));
 
 if (!serve || !versions?.length) {
   console.error('versions.json must include "serve" (path to HTML file) and "versions" (array of {label, hash})');
   process.exit(1);
 }
 
-const appFile = path.join(repoRoot, serve);
+const appFile = path.join(repoRoot, resolvedServe);
 let active = versions[versions.length - 1].hash;
 
 function switchTo(hash) {
   if (!/^[0-9a-f]{7,40}$|^HEAD$/.test(hash)) return false;
-  execSync(`git checkout ${hash} -- ${serve}`, { cwd: repoRoot });
+  execSync(`git checkout ${hash} -- ${resolvedServe}`, { cwd: repoRoot });
   active = hash;
   return true;
 }
@@ -112,7 +119,7 @@ const server = http.createServer((req, res) => {
   }
 
   // Serve declared assets by their basename (e.g. transcript-cutter/data.js → /data.js)
-  for (const assetPath of assets) {
+  for (const assetPath of resolvedAssets) {
     if (req.url === '/' + path.basename(assetPath)) {
       const full = path.join(repoRoot, assetPath);
       if (fs.existsSync(full)) {
