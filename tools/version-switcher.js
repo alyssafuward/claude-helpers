@@ -32,7 +32,7 @@ if (!fs.existsSync(configPath)) {
 
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 const configDir = path.dirname(configPath);
-const { port = 3003, serve, assets = [], versions } = config;
+const { port = 3003, serve, gitPath, assets = [], versions } = config;
 
 // Resolve paths relative to the versions.json location
 const resolvedServe = path.relative(repoRoot, path.resolve(configDir, serve));
@@ -48,7 +48,11 @@ let active = versions[versions.length - 1].hash;
 
 function switchTo(hash) {
   if (!/^[0-9a-f]{7,40}$|^HEAD$/.test(hash)) return false;
-  execSync(`git checkout ${hash} -- ${resolvedServe}`, { cwd: repoRoot });
+  // Use per-version gitPath, top-level gitPath, or resolvedServe (current path)
+  const version = versions.find(v => v.hash === hash);
+  const historicalPath = version?.gitPath || gitPath || resolvedServe;
+  const content = execSync(`git show ${hash}:${historicalPath}`, { cwd: repoRoot });
+  fs.writeFileSync(appFile, content);
   active = hash;
   return true;
 }

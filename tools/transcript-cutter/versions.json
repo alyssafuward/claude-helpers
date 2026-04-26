@@ -1,6 +1,7 @@
 {
   "port": 3003,
   "serve": "index.html",
+  "gitPath": "transcript-cutter/index.html",
   "assets": ["data.js"],
   "versions": [
     { "label": "v1 — Basic transcript viewer",            "hash": "d514a64" },

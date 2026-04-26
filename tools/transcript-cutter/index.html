@@ -5,685 +5,396 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Transcript Cutter</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #f5f5f5;
-  color: #1a1a1a;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f5f5f5;
+    color: #1a1a1a;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
 
-/* ── Header ── */
-header {
-  background: #fff;
-  border-bottom: 1px solid #e0e0e0;
-  flex-shrink: 0;
-}
+  header {
+    background: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
 
-.header-top {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 20px;
-}
+  header h1 { font-size: 16px; font-weight: 600; }
 
-.header-top h1 { font-size: 15px; font-weight: 600; }
+  .file-btn {
+    background: #1a1a1a;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 7px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .file-btn:hover { background: #333; }
 
-.file-btn {
-  background: #1a1a1a;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 12px;
-  cursor: pointer;
-  font-weight: 500;
-  white-space: nowrap;
-}
-.file-btn:hover { background: #333; }
+  .ai-badge {
+    background: #e8f5e9;
+    color: #2d6a4f;
+    border: 1px solid #c3e6cb;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: 500;
+  }
 
-.filename-label { font-size: 12px; color: #888; }
+  .header-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
 
-.ai-badge {
-  background: #e8f5e9;
-  color: #2d6a4f;
-  border: 1px solid #c3e6cb;
-  border-radius: 6px;
-  padding: 3px 8px;
-  font-size: 11px;
-  font-weight: 500;
-}
+  .select-all-btn, .deselect-all-btn {
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    color: #555;
+  }
+  .select-all-btn:hover, .deselect-all-btn:hover { background: #f0f0f0; }
 
-.header-right {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+  .filename-label { font-size: 12px; color: #888; }
 
-.ghost-btn {
-  background: none;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  padding: 5px 10px;
-  font-size: 12px;
-  cursor: pointer;
-  color: #555;
-  white-space: nowrap;
-}
-.ghost-btn:hover { background: #f0f0f0; }
+  main { display: flex; flex: 1; overflow: hidden; }
 
-/* ── Tab bar ── */
-.tab-bar {
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  gap: 2px;
-  border-top: 1px solid #f0f0f0;
-}
+  #transcript-panel { flex: 1; overflow-y: auto; padding: 16px; }
 
-.tab {
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  padding: 8px 14px;
-  font-size: 13px;
-  cursor: pointer;
-  color: #888;
-  font-weight: 500;
-  white-space: nowrap;
-}
-.tab:hover { color: #333; }
-.tab.active { color: #1a1a1a; border-bottom-color: #1a1a1a; }
-.tab.boundaries-tab { color: #555; }
-.tab.boundaries-tab.active { color: #1a1a1a; }
+  .drop-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    border: 2px dashed #ccc;
+    border-radius: 12px;
+    color: #999;
+    font-size: 14px;
+    gap: 8px;
+    cursor: pointer;
+  }
+  .drop-zone svg { opacity: 0.4; }
+  .drop-zone.drag-over { border-color: #1a1a1a; background: #fafafa; }
 
-.add-tab-btn {
-  background: none;
-  border: none;
-  padding: 8px 10px;
-  font-size: 16px;
-  cursor: pointer;
-  color: #bbb;
-  line-height: 1;
-}
-.add-tab-btn:hover { color: #555; }
+  .cue {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+    margin-bottom: 2px;
+    transition: background 0.1s;
+  }
+  .cue:hover { background: #ebebeb; }
+  .cue.selected { background: #d4edda; }
+  .cue.selected:hover { background: #c3e6cb; }
 
-/* ── Main layout ── */
-main {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
+  .cue-time {
+    font-size: 11px;
+    color: #999;
+    white-space: nowrap;
+    margin-top: 2px;
+    min-width: 68px;
+    font-family: 'SF Mono', 'Menlo', monospace;
+  }
+  .cue.selected .cue-time { color: #2d6a4f; }
 
-/* ── Transcript panel ── */
-#transcript-panel {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px 12px;
-}
+  .cue-body { flex: 1; }
 
-.drop-zone {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  border: 2px dashed #ccc;
-  border-radius: 12px;
-  color: #999;
-  font-size: 14px;
-  gap: 8px;
-  cursor: pointer;
-  margin: 16px;
-}
-.drop-zone.drag-over { border-color: #1a1a1a; background: #fafafa; }
+  .cue-speaker {
+    font-size: 11px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .cue.selected .cue-speaker { color: #2d6a4f; }
 
-/* ── Section headers ── */
-.section-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px 6px;
-  cursor: pointer;
-  user-select: none;
-  position: sticky;
-  top: 0;
-  background: #f5f5f5;
-  z-index: 1;
-  border-bottom: 1px solid #e8e8e8;
-  margin-bottom: 2px;
-}
-.section-header:hover { background: #eee; }
+  .cue-text { font-size: 14px; line-height: 1.5; color: #1a1a1a; }
 
-.section-toggle { font-size: 10px; color: #999; width: 10px; }
-.section-title { font-size: 12px; font-weight: 600; color: #444; text-transform: uppercase; letter-spacing: 0.05em; flex: 1; }
-.section-count { font-size: 11px; color: #aaa; }
+  .check {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 2px solid #ccc;
+    flex-shrink: 0;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .cue.selected .check { background: #28a745; border-color: #28a745; }
+  .cue.selected .check::after {
+    content: '';
+    width: 10px;
+    height: 6px;
+    border-left: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    transform: rotate(-45deg) translate(1px, -1px);
+  }
 
-/* ── Cue rows ── */
-.cue {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 6px 10px;
-  border-radius: 5px;
-  cursor: pointer;
-  user-select: none;
-  margin-bottom: 1px;
-}
-.cue:hover { background: #ebebeb; }
-.cue.selected { background: #d4edda; }
-.cue.selected:hover { background: #c3e6cb; }
+  #ranges-panel {
+    width: 320px;
+    background: #fff;
+    border-left: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
 
-.drag-handle {
-  font-size: 14px;
-  color: #ccc;
-  cursor: grab;
-  padding: 0 2px;
-  margin-top: 1px;
-  flex-shrink: 0;
-}
-.drag-handle:hover { color: #888; }
-.drag-spacer { width: 18px; flex-shrink: 0; }
+  #ranges-panel h2 {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid #f0f0f0;
+    color: #444;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
 
-.cue-time {
-  font-size: 11px;
-  color: #999;
-  white-space: nowrap;
-  margin-top: 2px;
-  min-width: 60px;
-  font-family: 'SF Mono', 'Menlo', monospace;
-  flex-shrink: 0;
-}
-.cue.selected .cue-time { color: #2d6a4f; }
+  #ranges-list { flex: 1; overflow-y: auto; padding: 12px; }
 
-.cue-body { flex: 1; min-width: 0; }
+  .range-item {
+    background: #f8f8f8;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border-left: 3px solid #28a745;
+  }
 
-.cue-speaker {
-  font-size: 10px;
-  font-weight: 600;
-  color: #888;
-  margin-bottom: 1px;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-.cue.selected .cue-speaker { color: #2d6a4f; }
+  .range-label { font-size: 11px; color: #888; margin-bottom: 4px; }
 
-.cue-text { font-size: 13px; line-height: 1.45; color: #1a1a1a; }
+  .range-times {
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
 
-.check {
-  width: 16px;
-  height: 16px;
-  border-radius: 3px;
-  border: 2px solid #ccc;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-.cue.selected .check {
-  background: #28a745;
-  border-color: #28a745;
-  position: relative;
-}
-.cue.selected .check::after {
-  content: '';
-  position: absolute;
-  width: 8px;
-  height: 5px;
-  border-left: 2px solid #fff;
-  border-bottom: 2px solid #fff;
-  transform: rotate(-45deg);
-  top: 2px;
-  left: 2px;
-}
+  .range-duration { font-size: 11px; color: #888; margin-top: 3px; }
 
-.cue.boundary-cue { background: #fafafa; }
-.cue.dragging { opacity: 0.4; }
+  .ranges-footer {
+    border-top: 1px solid #f0f0f0;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
 
-/* ── Boundary drop zone ── */
-.boundary-drop {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 12px;
-  margin: 2px 10px;
-  color: #ddd;
-  font-size: 10px;
-  letter-spacing: 2px;
-  border-radius: 4px;
-  transition: all 0.1s;
-}
-.boundary-drop.drag-over {
-  background: #e3f2fd;
-  color: #1976d2;
-  height: 24px;
-  border: 1px dashed #90caf9;
-}
+  .stats { font-size: 12px; color: #888; text-align: center; }
 
-/* ── Side panel ── */
-#side-panel {
-  width: 300px;
-  background: #fff;
-  border-left: 1px solid #e0e0e0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
+  .export-btn {
+    width: 100%;
+    padding: 9px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .export-text-btn { background: #1a1a1a; color: #fff; }
+  .export-text-btn:hover { background: #333; }
+  .export-ffmpeg-btn { background: #f0f0f0; color: #1a1a1a; }
+  .export-ffmpeg-btn:hover { background: #e4e4e4; }
 
-.side-panel-header {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #888;
-  padding: 12px 14px 8px;
-  border-bottom: 1px solid #f0f0f0;
-}
+  .empty-ranges { text-align: center; color: #bbb; font-size: 13px; padding: 40px 20px; }
 
-.side-panel-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px;
-}
-
-/* ── Boundary side panel ── */
-.section-list-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: 5px;
-  margin-bottom: 2px;
-}
-.section-list-item:hover { background: #f5f5f5; }
-.section-name-input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  font-size: 13px;
-  color: #1a1a1a;
-  outline: none;
-  cursor: pointer;
-}
-.section-name-input:focus { cursor: text; background: #f0f0f0; border-radius: 3px; padding: 1px 4px; }
-.section-cue-count { font-size: 11px; color: #bbb; white-space: nowrap; }
-
-/* ── Selection side panel ── */
-.range-item {
-  background: #f8f8f8;
-  border-radius: 7px;
-  padding: 8px 10px;
-  margin-bottom: 6px;
-  border-left: 3px solid #28a745;
-}
-.range-label { font-size: 10px; color: #aaa; margin-bottom: 3px; }
-.range-times { font-family: 'SF Mono', 'Menlo', monospace; font-size: 12px; font-weight: 600; }
-.range-duration { font-size: 10px; color: #aaa; margin-top: 2px; }
-
-.empty-ranges { text-align: center; color: #ccc; font-size: 12px; padding: 30px 16px; }
-
-/* ── Side panel footer ── */
-.side-panel-footer {
-  border-top: 1px solid #f0f0f0;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.stats { font-size: 11px; color: #aaa; text-align: center; }
-
-.action-btn {
-  width: 100%;
-  padding: 8px;
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  text-align: center;
-}
-.btn-dark { background: #1a1a1a; color: #fff; }
-.btn-dark:hover { background: #333; }
-.btn-light { background: #f0f0f0; color: #1a1a1a; }
-.btn-light:hover { background: #e4e4e4; }
-
-/* ── Transcript export options ── */
-.export-options {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  padding: 6px 0 2px;
-}
-.export-options label { font-size: 11px; color: #555; display: flex; align-items: center; gap: 4px; cursor: pointer; }
-
-/* ── Toast ── */
-.toast {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #1a1a1a;
-  color: #fff;
-  padding: 8px 18px;
-  border-radius: 8px;
-  font-size: 12px;
-  opacity: 0;
-  transition: opacity 0.2s;
-  pointer-events: none;
-  z-index: 999;
-}
-.toast.show { opacity: 1; }
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a1a1a;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    z-index: 999;
+  }
+  .toast.show { opacity: 1; }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="header-top">
-    <h1>Transcript Cutter</h1>
-    <button class="file-btn" onclick="document.getElementById('file-input').click()">Open VTT</button>
-    <span class="filename-label" id="filename-label"></span>
-    <span class="ai-badge" id="ai-badge" style="display:none"></span>
-    <div class="header-right" id="header-right" style="display:none">
-      <button class="ghost-btn" onclick="selectAll()">Select all</button>
-      <button class="ghost-btn" onclick="deselectAll()">Deselect all</button>
-    </div>
-    <input type="file" id="file-input" accept=".vtt" style="display:none" onchange="loadFile(this)">
+  <h1>Transcript Cutter</h1>
+  <button class="file-btn" onclick="document.getElementById('file-input').click()">Open VTT file</button>
+  <span class="filename-label" id="filename-label"></span>
+  <span class="ai-badge" id="ai-badge" style="display:none"></span>
+  <div class="header-actions" id="header-actions" style="display:none">
+    <button class="select-all-btn" onclick="selectAll()">Select all</button>
+    <button class="deselect-all-btn" onclick="deselectAll()">Deselect all</button>
   </div>
-  <div class="tab-bar" id="tab-bar" style="display:none">
-    <button class="tab boundaries-tab active" onclick="setTab('boundaries')">Boundaries</button>
-    <div id="selection-tabs" style="display:contents"></div>
-    <button class="add-tab-btn" onclick="addTab()" title="New selection set">+</button>
-  </div>
+  <input type="file" id="file-input" accept=".vtt" style="display:none" onchange="loadFile(this)">
 </header>
 
 <main>
   <div id="transcript-panel">
     <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".4">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
         <polyline points="14 2 14 8 20 8"/>
+        <line x1="12" y1="18" x2="12" y2="12"/>
+        <line x1="9" y1="15" x2="15" y2="15"/>
       </svg>
       <span>Click or drop a .vtt file here</span>
     </div>
   </div>
-  <div id="side-panel"></div>
+
+  <div id="ranges-panel">
+    <h2>Keep Ranges</h2>
+    <div id="ranges-list">
+      <div class="empty-ranges">Select segments in the transcript to build your keep list.</div>
+    </div>
+    <div class="ranges-footer" id="ranges-footer" style="display:none">
+      <div class="stats" id="stats"></div>
+      <button class="export-btn export-text-btn" onclick="exportText()">Copy as timestamps</button>
+      <button class="export-btn export-ffmpeg-btn" onclick="exportFFmpeg()">Copy ffmpeg command</button>
+    </div>
+  </div>
 </main>
 
 <div class="toast" id="toast"></div>
 
-<script src="data.js" onerror="console.log('No data.js')"></script>
+<script src="data.js" onerror="console.log('No data.js found')"></script>
 <script>
-// ── State ──────────────────────────────────────────────────────────────────
 let cues = [];
-let sections = [];
-let selectionSets = {};       // name → Set<cue index>
-let activeTab = 'boundaries';
-let currentFilename = '';
-let lastClicked = null;
-let collapsedSections = new Set();
-let dragState = null;
-let transcriptIncludeSpeaker = true;
-let transcriptIncludeTime = false;
+let selected = new Set();
 
-// ── Storage ────────────────────────────────────────────────────────────────
-const sk = s => `tc-${s}:${currentFilename}`;
-
-function saveSections() {
-  localStorage.setItem(sk('sections'), JSON.stringify(sections));
-}
-
-function saveSet(name) {
-  if (selectionSets[name])
-    localStorage.setItem(sk(`sel-${name}`), JSON.stringify([...selectionSets[name]]));
-}
-
-function saveCollapsed() {
-  localStorage.setItem(sk('collapsed'), JSON.stringify([...collapsedSections]));
-}
-
-function loadStorage() {
-  const savedSections = localStorage.getItem(sk('sections'));
-  if (savedSections) sections = JSON.parse(savedSections);
-
-  const savedCollapsed = localStorage.getItem(sk('collapsed'));
-  if (savedCollapsed) collapsedSections = new Set(JSON.parse(savedCollapsed));
-
-  // find all saved selection sets
-  for (const key of Object.keys(localStorage)) {
-    const prefix = `tc-sel-`;
-    const suffix = `:${currentFilename}`;
-    if (key.startsWith(prefix) && key.endsWith(suffix)) {
-      const name = key.slice(prefix.length, -suffix.length);
-      selectionSets[name] = new Set(JSON.parse(localStorage.getItem(key)));
-    }
-  }
-}
-
-// ── Section helpers ────────────────────────────────────────────────────────
-function getSectionedCues() {
-  return sections.map((sec, sIdx) => {
-    const nextId = sIdx + 1 < sections.length ? sections[sIdx + 1].firstCueId : Infinity;
-    const sc = cues.map((c, i) => ({ cue: c, idx: i }))
-                   .filter(({ cue }) => cue.id >= sec.firstCueId && cue.id < nextId);
-    return { sec, sIdx, cues: sc };
-  });
-}
-
-// ── Init ───────────────────────────────────────────────────────────────────
+// ── Auto-load from data.js ─────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-  const dz = document.getElementById('drop-zone');
-  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
-  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
-  dz.addEventListener('drop', e => {
-    e.preventDefault(); dz.classList.remove('drag-over');
-    const f = e.dataTransfer.files[0]; if (f) readFile(f);
-  });
-
   if (window.TRANSCRIPT_DATA) {
     const d = window.TRANSCRIPT_DATA;
     cues = d.cues;
-    sections = d.sections || [];
-    currentFilename = d.filename || '';
-
-    selectionSets = { Video: new Set(), GitHub: new Set() };
+    selected = new Set();
     if (d.suggested) {
-      const ids = new Set(d.suggested);
-      cues.forEach((c, i) => { if (ids.has(c.id)) selectionSets.Video.add(i); });
+      const suggestedIds = new Set(d.suggested);
+      cues.forEach((c, i) => { if (suggestedIds.has(c.id)) selected.add(i); });
     }
-
-    collapsedSections.add('presession');
-    loadStorage();
-
-    document.getElementById('filename-label').textContent = currentFilename;
+    document.getElementById('filename-label').textContent = d.filename || '';
     if (d.suggested) {
       const badge = document.getElementById('ai-badge');
-      badge.textContent = `AI suggested ${selectionSets.Video.size} segments`;
+      badge.textContent = `AI suggested ${selected.size} of ${cues.length} segments`;
       badge.style.display = 'inline-block';
     }
-
-    showApp();
+    document.getElementById('header-actions').style.display = 'flex';
+    renderTranscript();
+    renderRanges();
+    // scroll to first selected
     const first = document.querySelector('.cue.selected');
     if (first) setTimeout(() => first.scrollIntoView({ block: 'center' }), 100);
   }
 });
 
+// ── Drag and drop ──────────────────────────────────────────────────────────
+const dropZone = document.getElementById('drop-zone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) readFile(file);
+});
+
 function loadFile(input) { if (input.files[0]) readFile(input.files[0]); }
 
 function readFile(file) {
-  currentFilename = file.name;
-  sections = [];
-  selectionSets = { Video: new Set() };
-  collapsedSections = new Set();
-  document.getElementById('filename-label').textContent = currentFilename;
+  document.getElementById('filename-label').textContent = file.name;
   document.getElementById('ai-badge').style.display = 'none';
   const reader = new FileReader();
   reader.onload = e => {
     cues = parseVTT(e.target.result);
-    loadStorage();
-    showApp();
+    selected = new Set();
+    renderTranscript();
+    renderRanges();
+    document.getElementById('header-actions').style.display = 'flex';
   };
   reader.readAsText(file);
 }
 
-function showApp() {
-  document.getElementById('drop-zone')?.remove();
-  document.getElementById('tab-bar').style.display = 'flex';
-  renderTabs();
-  render();
-}
-
-// ── Tabs ───────────────────────────────────────────────────────────────────
-function renderTabs() {
-  const container = document.getElementById('selection-tabs');
-  container.innerHTML = '';
-
-  document.querySelector('.boundaries-tab').className =
-    'tab boundaries-tab' + (activeTab === 'boundaries' ? ' active' : '');
-
-  for (const name of Object.keys(selectionSets)) {
-    const btn = document.createElement('button');
-    btn.className = 'tab' + (activeTab === name ? ' active' : '');
-    btn.textContent = name;
-    btn.onclick = () => setTab(name);
-    btn.ondblclick = () => renameTab(name);
-    container.appendChild(btn);
+// ── VTT parser ─────────────────────────────────────────────────────────────
+function parseVTT(text) {
+  const result = [];
+  const lines = text.replace(/\r\n/g, '\n').split('\n');
+  let i = 0;
+  while (i < lines.length && !lines[i].trim().match(/^\d+$/)) i++;
+  while (i < lines.length) {
+    const line = lines[i].trim();
+    if (/^\d+$/.test(line)) {
+      const id = parseInt(line);
+      i++;
+      const timeLine = (lines[i] || '').trim();
+      const m = timeLine.match(/(\d{2}:\d{2}:\d{2}[.,]\d+)\s*-->\s*(\d{2}:\d{2}:\d{2}[.,]\d+)/);
+      if (m) {
+        i++;
+        const textLines = [];
+        while (i < lines.length && lines[i].trim() !== '') { textLines.push(lines[i].trim()); i++; }
+        const rawText = textLines.join(' ');
+        const sm = rawText.match(/^([^:]+):\s*(.*)/s);
+        result.push({
+          id,
+          start: m[1].replace(',', '.'),
+          end: m[2].replace(',', '.'),
+          startSec: toSec(m[1]),
+          endSec: toSec(m[2]),
+          speaker: sm ? sm[1].trim() : null,
+          text: sm ? sm[2].trim() : rawText,
+        });
+      }
+    }
+    i++;
   }
-
-  const isSelection = activeTab !== 'boundaries';
-  document.getElementById('header-right').style.display = isSelection ? 'flex' : 'none';
+  return result;
 }
 
-function setTab(name) {
-  activeTab = name;
-  lastClicked = null;
-  renderTabs();
-  render();
+function toSec(ts) {
+  const t = ts.replace(',', '.');
+  const parts = t.split(':');
+  return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseFloat(parts[2]);
 }
 
-function addTab() {
-  const name = prompt('Selection set name:');
-  if (!name || selectionSets[name]) return;
-  selectionSets[name] = new Set();
-  setTab(name);
+function formatTime(ts) {
+  const parts = ts.split(':');
+  const h = parseInt(parts[0]);
+  const m = parts[1];
+  const s = parts[2].split('.')[0];
+  return h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
 }
 
-function renameTab(oldName) {
-  const newName = prompt('Rename to:', oldName);
-  if (!newName || newName === oldName || selectionSets[newName]) return;
-  selectionSets[newName] = selectionSets[oldName];
-  delete selectionSets[oldName];
-  localStorage.removeItem(sk(`sel-${oldName}`));
-  if (activeTab === oldName) activeTab = newName;
-  saveSet(newName);
-  renderTabs();
-  render();
+function formatDuration(sec) {
+  const m = Math.floor(sec / 60);
+  const s = Math.round(sec % 60);
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
-// ── Render ─────────────────────────────────────────────────────────────────
-function render() {
-  renderTranscript();
-  renderSidePanel();
-}
-
+// ── Render transcript ──────────────────────────────────────────────────────
 function renderTranscript() {
   const panel = document.getElementById('transcript-panel');
   panel.innerHTML = '';
-
-  if (sections.length === 0) {
-    renderFlatCues(panel);
-    return;
-  }
-
-  const isBoundaries = activeTab === 'boundaries';
-  const selSet = isBoundaries ? null : (selectionSets[activeTab] || new Set());
-  const sectioned = getSectionedCues();
-
-  for (const { sec, sIdx, cues: sCues } of sectioned) {
-    const isCollapsed = collapsedSections.has(sec.id);
-    const selectedCount = selSet ? sCues.filter(({ idx }) => selSet.has(idx)).length : 0;
-
-    // Section header
-    const hdr = document.createElement('div');
-    hdr.className = 'section-header';
-    hdr.innerHTML = `
-      <span class="section-toggle">${isCollapsed ? '▶' : '▼'}</span>
-      <span class="section-title">${escHtml(sec.title)}</span>
-      <span class="section-count">${selSet ? `${selectedCount}/` : ''}${sCues.length}</span>
-    `;
-    hdr.onclick = () => toggleSection(sec.id);
-    panel.appendChild(hdr);
-
-    if (isCollapsed) continue;
-
-    for (let i = 0; i < sCues.length; i++) {
-      const { cue, idx } = sCues[i];
-      const isFirst = i === 0 && sIdx > 0;
-      const isLast = i === sCues.length - 1 && sIdx < sections.length - 1;
-
-      const div = document.createElement('div');
-
-      if (isBoundaries) {
-        const isBoundary = isFirst || isLast;
-        div.className = 'cue' + (isBoundary ? ' boundary-cue' : '');
-        div.innerHTML = `
-          ${isBoundary ? '<span class="drag-handle" title="Drag to move boundary">⠿</span>' : '<span class="drag-spacer"></span>'}
-          <div class="cue-time">${formatTime(cue.start)}</div>
-          <div class="cue-body">
-            ${cue.speaker ? `<div class="cue-speaker">${escHtml(cue.speaker)}</div>` : ''}
-            <div class="cue-text">${escHtml(cue.text)}</div>
-          </div>
-        `;
-        if (isBoundary) {
-          div.draggable = true;
-          div.addEventListener('dragstart', e => {
-            dragState = { cueIdx: idx, sectionIdx: sIdx, position: isFirst ? 'first' : 'last' };
-            e.dataTransfer.effectAllowed = 'move';
-            setTimeout(() => div.classList.add('dragging'), 0);
-          });
-          div.addEventListener('dragend', () => div.classList.remove('dragging'));
-        }
-      } else {
-        div.className = 'cue' + (selSet.has(idx) ? ' selected' : '');
-        div.dataset.idx = idx;
-        div.innerHTML = `
-          <div class="check"></div>
-          <div class="cue-time">${formatTime(cue.start)}</div>
-          <div class="cue-body">
-            ${cue.speaker ? `<div class="cue-speaker">${escHtml(cue.speaker)}</div>` : ''}
-            <div class="cue-text">${escHtml(cue.text)}</div>
-          </div>
-        `;
-        div.addEventListener('click', e => handleCueClick(idx, e));
-      }
-
-      panel.appendChild(div);
-    }
-
-    // Drop zone after last cue of section (except last section)
-    if (isBoundaries && sIdx < sections.length - 1) {
-      const drop = document.createElement('div');
-      drop.className = 'boundary-drop';
-      drop.textContent = '─ ─ ─';
-      drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag-over'); });
-      drop.addEventListener('dragleave', () => drop.classList.remove('drag-over'));
-      drop.addEventListener('drop', e => {
-        e.preventDefault();
-        drop.classList.remove('drag-over');
-        handleBoundaryDrop(sIdx, sIdx + 1);
-      });
-      panel.appendChild(drop);
-    }
-  }
-}
-
-function renderFlatCues(panel) {
-  const selSet = activeTab !== 'boundaries' ? (selectionSets[activeTab] || new Set()) : null;
   cues.forEach((cue, idx) => {
     const div = document.createElement('div');
-    div.className = 'cue' + (selSet?.has(idx) ? ' selected' : '');
+    div.className = 'cue' + (selected.has(idx) ? ' selected' : '');
     div.dataset.idx = idx;
     div.innerHTML = `
       <div class="check"></div>
@@ -693,157 +404,27 @@ function renderFlatCues(panel) {
         <div class="cue-text">${escHtml(cue.text)}</div>
       </div>
     `;
-    if (selSet !== null) div.addEventListener('click', e => handleCueClick(idx, e));
+    div.addEventListener('click', () => toggleCue(idx));
     panel.appendChild(div);
   });
 }
 
-// ── Side panel ─────────────────────────────────────────────────────────────
-function renderSidePanel() {
-  const panel = document.getElementById('side-panel');
-  panel.innerHTML = '';
-
-  if (activeTab === 'boundaries') {
-    renderBoundariesPanel(panel);
-  } else {
-    renderSelectionPanel(panel);
-  }
+function toggleCue(idx) {
+  if (selected.has(idx)) { selected.delete(idx); } else { selected.add(idx); }
+  const el = document.querySelector(`.cue[data-idx="${idx}"]`);
+  if (el) el.className = 'cue' + (selected.has(idx) ? ' selected' : '');
+  renderRanges();
 }
 
-function renderBoundariesPanel(panel) {
-  panel.innerHTML = `<div class="side-panel-header">Sections</div>`;
-  const body = document.createElement('div');
-  body.className = 'side-panel-body';
+function selectAll() { cues.forEach((_, i) => selected.add(i)); renderTranscript(); renderRanges(); }
+function deselectAll() { selected.clear(); renderTranscript(); renderRanges(); }
 
-  const sectioned = getSectionedCues();
-  for (const { sec, cues: sCues } of sectioned) {
-    const item = document.createElement('div');
-    item.className = 'section-list-item';
-    item.innerHTML = `
-      <input class="section-name-input" value="${escHtml(sec.title)}" data-id="${sec.id}">
-      <span class="section-cue-count">${sCues.length} cues</span>
-    `;
-    item.querySelector('input').addEventListener('change', e => {
-      const s = sections.find(s => s.id === sec.id);
-      if (s) { s.title = e.target.value; saveSections(); renderTranscript(); }
-    });
-    body.appendChild(item);
-  }
-
-  const footer = document.createElement('div');
-  footer.className = 'side-panel-footer';
-  footer.innerHTML = `
-    <button class="action-btn btn-light" onclick="saveSections(); toast('Sections saved')">Save sections</button>
-  `;
-
-  panel.appendChild(body);
-  panel.appendChild(footer);
-}
-
-function renderSelectionPanel(panel) {
-  const selSet = selectionSets[activeTab] || new Set();
-
-  panel.innerHTML = `<div class="side-panel-header">Keep Ranges — ${activeTab}</div>`;
-  const body = document.createElement('div');
-  body.className = 'side-panel-body';
-
-  const ranges = getMergedRanges(selSet);
-  if (ranges.length === 0) {
-    body.innerHTML = '<div class="empty-ranges">Click cues to mark segments to keep.</div>';
-  } else {
-    body.innerHTML = ranges.map((r, i) => `
-      <div class="range-item">
-        <div class="range-label">Range ${i + 1}</div>
-        <div class="range-times">${formatTime(r.start)} → ${formatTime(r.end)}</div>
-        <div class="range-duration">${formatDuration(r.endSec - r.startSec)}</div>
-      </div>
-    `).join('');
-  }
-
-  const totalSec = ranges.reduce((s, r) => s + r.endSec - r.startSec, 0);
-
-  const footer = document.createElement('div');
-  footer.className = 'side-panel-footer';
-  footer.innerHTML = `
-    <div class="stats">${ranges.length} range${ranges.length !== 1 ? 's' : ''} · ${formatDuration(totalSec)}</div>
-    <button class="action-btn btn-dark" onclick="exportTimestamps()">Copy timestamps</button>
-    <button class="action-btn btn-light" onclick="exportFFmpeg()">Copy ffmpeg command</button>
-    <div class="export-options">
-      <label><input type="checkbox" id="opt-speaker" ${transcriptIncludeSpeaker ? 'checked' : ''} onchange="transcriptIncludeSpeaker=this.checked"> Speaker</label>
-      <label><input type="checkbox" id="opt-time" ${transcriptIncludeTime ? 'checked' : ''} onchange="transcriptIncludeTime=this.checked"> Timestamps</label>
-      <button class="ghost-btn" style="margin-left:auto" onclick="exportTranscript()">Copy text</button>
-    </div>
-    <button class="action-btn btn-light" onclick="saveToFile()">Download marked JSON</button>
-    <label class="action-btn btn-light" style="cursor:pointer">
-      Load file<input type="file" accept=".json" style="display:none" onchange="loadFromFile(this)">
-    </label>
-  `;
-
-  panel.appendChild(body);
-  panel.appendChild(footer);
-}
-
-// ── Section interaction ─────────────────────────────────────────────────────
-function toggleSection(id) {
-  if (collapsedSections.has(id)) collapsedSections.delete(id);
-  else collapsedSections.add(id);
-  saveCollapsed();
-  renderTranscript();
-  renderSidePanel();
-}
-
-// ── Boundary drag ───────────────────────────────────────────────────────────
-function handleBoundaryDrop(upperSIdx, lowerSIdx) {
-  if (!dragState) return;
-  if (dragState.sectionIdx === upperSIdx && dragState.position === 'last') {
-    sections[lowerSIdx].firstCueId = cues[dragState.cueIdx].id;
-  } else if (dragState.sectionIdx === lowerSIdx && dragState.position === 'first') {
-    const next = dragState.cueIdx + 1;
-    sections[lowerSIdx].firstCueId = next < cues.length ? cues[next].id : Infinity;
-  }
-  dragState = null;
-  saveSections();
-  render();
-}
-
-// ── Selection ───────────────────────────────────────────────────────────────
-function handleCueClick(idx, e) {
-  const selSet = selectionSets[activeTab];
-  if (!selSet) return;
-
-  if (e.metaKey && lastClicked !== null) {
-    const lo = Math.min(lastClicked, idx), hi = Math.max(lastClicked, idx);
-    const allOn = [...Array(hi - lo + 1).keys()].map(k => k + lo).every(i => selSet.has(i));
-    for (let i = lo; i <= hi; i++) allOn ? selSet.delete(i) : selSet.add(i);
-    renderTranscript();
-  } else {
-    selSet.has(idx) ? selSet.delete(idx) : selSet.add(idx);
-    const el = document.querySelector(`.cue[data-idx="${idx}"]`);
-    if (el) el.className = 'cue' + (selSet.has(idx) ? ' selected' : '');
-  }
-
-  lastClicked = idx;
-  saveSet(activeTab);
-  renderSidePanel();
-}
-
-function selectAll() {
-  const selSet = selectionSets[activeTab];
-  if (selSet) { cues.forEach((_, i) => selSet.add(i)); saveSet(activeTab); render(); }
-}
-
-function deselectAll() {
-  const selSet = selectionSets[activeTab];
-  if (selSet) { selSet.clear(); saveSet(activeTab); render(); }
-}
-
-// ── Ranges ──────────────────────────────────────────────────────────────────
-function getMergedRanges(selSet) {
-  const sorted = [...selSet].sort((a, b) => a - b);
+// ── Merge and render ranges ────────────────────────────────────────────────
+function getMergedRanges() {
+  const sorted = [...selected].sort((a, b) => a - b);
   const ranges = [];
   for (const idx of sorted) {
     const cue = cues[idx];
-    if (!cue) continue;
     if (ranges.length === 0 || cue.startSec > ranges[ranges.length - 1].endSec + 0.1) {
       ranges.push({ start: cue.start, end: cue.end, startSec: cue.startSec, endSec: cue.endSec });
     } else {
@@ -854,151 +435,81 @@ function getMergedRanges(selSet) {
   return ranges;
 }
 
-// ── Export ──────────────────────────────────────────────────────────────────
-function exportTimestamps() {
-  const ranges = getMergedRanges(selectionSets[activeTab] || new Set());
-  const lines = [`Keep ranges (${activeTab}):`, ''];
+function renderRanges() {
+  const list = document.getElementById('ranges-list');
+  const footer = document.getElementById('ranges-footer');
+  if (selected.size === 0) {
+    list.innerHTML = '<div class="empty-ranges">Select segments in the transcript to build your keep list.</div>';
+    footer.style.display = 'none';
+    return;
+  }
+  const ranges = getMergedRanges();
+  const totalSec = ranges.reduce((s, r) => s + (r.endSec - r.startSec), 0);
+  list.innerHTML = ranges.map((r, i) => `
+    <div class="range-item">
+      <div class="range-label">Range ${i + 1}</div>
+      <div class="range-times">${formatTime(r.start)} → ${formatTime(r.end)}</div>
+      <div class="range-duration">${formatDuration(r.endSec - r.startSec)}</div>
+    </div>
+  `).join('');
+  document.getElementById('stats').textContent = `${ranges.length} range${ranges.length !== 1 ? 's' : ''} · ${formatDuration(totalSec)} kept`;
+  footer.style.display = 'flex';
+}
+
+// ── Export ─────────────────────────────────────────────────────────────────
+function exportText() {
+  const ranges = getMergedRanges();
+  const lines = ['Keep ranges:', ''];
   ranges.forEach((r, i) => lines.push(`${i + 1}. ${r.start} → ${r.end}  (${formatDuration(r.endSec - r.startSec)})`));
   lines.push('', `Total: ${formatDuration(ranges.reduce((s, r) => s + r.endSec - r.startSec, 0))}`);
   copyToClipboard(lines.join('\n'));
-  toast('Copied timestamps');
+  toast('Copied timestamps to clipboard');
 }
 
 function exportFFmpeg() {
-  const ranges = getMergedRanges(selectionSets[activeTab] || new Set());
-  if (!ranges.length) return;
+  const ranges = getMergedRanges();
+  if (ranges.length === 0) return;
   const lines = ['# Replace INPUT.mp4 with your video file', ''];
   if (ranges.length === 1) {
     const r = ranges[0];
     lines.push(`ffmpeg -i INPUT.mp4 -ss ${r.startSec.toFixed(3)} -to ${r.endSec.toFixed(3)} -c copy output.mp4`);
   } else {
-    const fp = [], maps = [];
+    const filterParts = [];
+    const maps = [];
     ranges.forEach((r, i) => {
-      fp.push(`[0:v]trim=${r.startSec.toFixed(3)}:${r.endSec.toFixed(3)},setpts=PTS-STARTPTS[v${i}]`);
-      fp.push(`[0:a]atrim=${r.startSec.toFixed(3)}:${r.endSec.toFixed(3)},asetpts=PTS-STARTPTS[a${i}]`);
+      filterParts.push(`[0:v]trim=${r.startSec.toFixed(3)}:${r.endSec.toFixed(3)},setpts=PTS-STARTPTS[v${i}]`);
+      filterParts.push(`[0:a]atrim=${r.startSec.toFixed(3)}:${r.endSec.toFixed(3)},asetpts=PTS-STARTPTS[a${i}]`);
       maps.push(`[v${i}][a${i}]`);
     });
-    fp.push(`${maps.join('')}concat=n=${ranges.length}:v=1:a=1[vout][aout]`);
-    lines.push(`ffmpeg -i INPUT.mp4 \\`, `  -filter_complex "${fp.join('; ')}" \\`, `  -map "[vout]" -map "[aout]" output.mp4`);
+    filterParts.push(`${maps.join('')}concat=n=${ranges.length}:v=1:a=1[vout][aout]`);
+    lines.push(`ffmpeg -i INPUT.mp4 \\`);
+    lines.push(`  -filter_complex "${filterParts.join('; ')}" \\`);
+    lines.push(`  -map "[vout]" -map "[aout]" output.mp4`);
   }
   copyToClipboard(lines.join('\n'));
-  toast('Copied ffmpeg command');
-}
-
-function exportTranscript() {
-  const selSet = selectionSets[activeTab] || new Set();
-  const sorted = [...selSet].sort((a, b) => a - b);
-  const lines = [];
-  for (const idx of sorted) {
-    const cue = cues[idx];
-    if (!cue) continue;
-    const parts = [];
-    if (transcriptIncludeSpeaker && cue.speaker) parts.push(`**${cue.speaker}**`);
-    if (transcriptIncludeTime) parts.push(`(${formatTime(cue.start)})`);
-    const prefix = parts.length ? parts.join(' ') + ': ' : '';
-    lines.push(prefix + cue.text);
-  }
-  copyToClipboard(lines.join('\n\n'));
-  toast('Copied transcript text');
-}
-
-function saveToFile() {
-  const allSets = {};
-  for (const [name, set] of Object.entries(selectionSets)) {
-    allSets[name] = cues.map((c, i) => ({ ...c, keep: set.has(i) }));
-  }
-  const data = { filename: currentFilename, sections, selectionSets: allSets };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = (currentFilename || 'transcript').replace('.vtt', '') + '.marked.json';
-  a.click();
-}
-
-function loadFromFile(input) {
-  const file = input.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const data = JSON.parse(e.target.result);
-      if (data.sections) sections = data.sections;
-      if (data.selectionSets) {
-        selectionSets = {};
-        for (const [name, setCues] of Object.entries(data.selectionSets)) {
-          const keepIds = new Set(setCues.filter(c => c.keep).map(c => c.id));
-          selectionSets[name] = new Set();
-          cues.forEach((c, i) => { if (keepIds.has(c.id)) selectionSets[name].add(i); });
-        }
-      }
-      saveSections();
-      for (const name of Object.keys(selectionSets)) saveSet(name);
-      render();
-      toast(`Loaded ${Object.keys(selectionSets).length} selection sets`);
-    } catch { toast('Invalid file'); }
-    input.value = '';
-  };
-  reader.readAsText(file);
-}
-
-// ── VTT parser ──────────────────────────────────────────────────────────────
-function parseVTT(text) {
-  const result = [];
-  const lines = text.replace(/\r\n/g, '\n').split('\n');
-  let i = 0;
-  while (i < lines.length && !lines[i].trim().match(/^\d+$/)) i++;
-  while (i < lines.length) {
-    if (/^\d+$/.test(lines[i].trim())) {
-      const id = parseInt(lines[i].trim()); i++;
-      const m = (lines[i] || '').trim().match(/(\d{2}:\d{2}:\d{2}[.,]\d+)\s*-->\s*(\d{2}:\d{2}:\d{2}[.,]\d+)/);
-      if (m) {
-        i++;
-        const tl = [];
-        while (i < lines.length && lines[i].trim()) { tl.push(lines[i].trim()); i++; }
-        const raw = tl.join(' ');
-        const sm = raw.match(/^([^:]+):\s*(.*)/s);
-        result.push({ id, start: m[1].replace(',','.'), end: m[2].replace(',','.'),
-          startSec: toSec(m[1]), endSec: toSec(m[2]),
-          speaker: sm ? sm[1].trim() : null, text: sm ? sm[2].trim() : raw });
-      }
-    }
-    i++;
-  }
-  return result;
-}
-
-// ── Helpers ─────────────────────────────────────────────────────────────────
-function toSec(ts) {
-  const p = ts.replace(',','.').split(':');
-  return parseInt(p[0])*3600 + parseInt(p[1])*60 + parseFloat(p[2]);
-}
-
-function formatTime(ts) {
-  const p = ts.split(':');
-  const h = parseInt(p[0]), m = p[1], s = p[2].split('.')[0];
-  return h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
-}
-
-function formatDuration(sec) {
-  const m = Math.floor(sec / 60), s = Math.round(sec % 60);
-  return m > 0 ? `${m}m ${s}s` : `${s}s`;
-}
-
-function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  toast('Copied ffmpeg command to clipboard');
 }
 
 function copyToClipboard(text) {
   navigator.clipboard.writeText(text).catch(() => {
     const ta = document.createElement('textarea');
-    ta.value = text; document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); document.body.removeChild(ta);
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
   });
 }
 
 function toast(msg) {
   const el = document.getElementById('toast');
-  el.textContent = msg; el.classList.add('show');
+  el.textContent = msg;
+  el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+function escHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 </script>
 </body>
