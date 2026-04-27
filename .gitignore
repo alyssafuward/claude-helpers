@@ -1,2 +1,5 @@
+tools/transcript-cutter/data.js
+tools/transcript-cutter/*.vtt
+tools/transcript-cutter/*.marked.json
 __pycache__/
 *.pyc
